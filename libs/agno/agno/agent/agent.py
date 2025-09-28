@@ -28,7 +28,7 @@ from uuid import uuid4
 from pydantic import BaseModel
 
 from agno.db.base import BaseDb, SessionType, UserMemory
-from agno.exceptions import ModelProviderError, RunCancelledException, StopAgentRun
+from exceptions import ModelProviderError, RunCancelledException, StopAgentRun
 from agno.knowledge.knowledge import Knowledge
 from agno.knowledge.types import KnowledgeFilter
 from agno.media import Audio, File, Image, Video

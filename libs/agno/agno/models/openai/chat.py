@@ -7,7 +7,7 @@ from uuid import uuid4
 import httpx
 from pydantic import BaseModel
 
-from agno.exceptions import ModelProviderError
+from exceptions import ModelProviderError
 from agno.media import Audio
 from agno.models.base import Model
 from agno.models.message import Message

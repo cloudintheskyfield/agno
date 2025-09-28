@@ -4,7 +4,7 @@ from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Type, Uni
 
 from pydantic import BaseModel
 
-from agno.exceptions import ModelProviderError, ModelRateLimitError
+from exceptions import ModelProviderError, ModelRateLimitError
 from agno.models.anthropic import Claude as AnthropicClaude
 from agno.models.message import Message
 from agno.models.response import ModelResponse

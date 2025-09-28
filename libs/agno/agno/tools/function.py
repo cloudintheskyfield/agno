@@ -7,7 +7,7 @@ from docstring_parser import parse
 from packaging.version import Version
 from pydantic import BaseModel, Field, validate_call
 
-from agno.exceptions import AgentRunException
+from exceptions import AgentRunException
 from agno.media import Audio, File, Image, Video
 from agno.utils.log import log_debug, log_error, log_exception, log_warning
 

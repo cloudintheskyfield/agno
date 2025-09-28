@@ -1,5 +1,5 @@
 from agno.agent import Agent
-from agno.exceptions import StopAgentRun
+from exceptions import StopAgentRun
 from agno.models.openai import OpenAIChat
 from agno.utils.log import logger
 

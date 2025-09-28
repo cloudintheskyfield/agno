@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 
 from pydantic import BaseModel
 
-from agno.exceptions import ModelProviderError, ModelRateLimitError
+from exceptions import ModelProviderError, ModelRateLimitError
 from agno.models.base import Model
 from agno.models.message import Citations, DocumentCitation, Message, UrlCitation
 from agno.models.metrics import Metrics

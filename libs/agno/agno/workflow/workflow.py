@@ -25,7 +25,7 @@ from pydantic import BaseModel
 
 from agno.agent.agent import Agent
 from agno.db.base import BaseDb, SessionType
-from agno.exceptions import RunCancelledException
+from exceptions import RunCancelledException
 from agno.media import Audio, File, Image, Video
 from agno.models.message import Message
 from agno.models.metrics import Metrics

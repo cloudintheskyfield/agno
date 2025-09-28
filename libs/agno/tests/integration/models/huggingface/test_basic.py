@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 from agno.agent import Agent, RunOutput  # noqa
 from agno.db.sqlite import SqliteDb
-from agno.exceptions import ModelProviderError
+from exceptions import ModelProviderError
 from agno.models.huggingface import HuggingFace
 
 

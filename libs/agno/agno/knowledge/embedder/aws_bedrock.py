@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from os import getenv
 from typing import Any, Dict, List, Optional, Tuple
 
-from agno.exceptions import AgnoError, ModelProviderError
+from exceptions import AgnoError, ModelProviderError
 from agno.knowledge.embedder.base import Embedder
 from agno.utils.log import log_error, logger
 

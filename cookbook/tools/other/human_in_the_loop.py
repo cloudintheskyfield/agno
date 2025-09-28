@@ -20,7 +20,7 @@ from typing import Iterator
 
 import httpx
 from agno.agent import Agent
-from agno.exceptions import StopAgentRun
+from exceptions import StopAgentRun
 from agno.models.openai import OpenAIChat
 from agno.tools import FunctionCall, tool
 from rich.console import Console

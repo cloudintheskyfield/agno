@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from os import getenv
 from typing import Any, Dict, Optional, cast
 
-from agno.exceptions import ModelProviderError
+from exceptions import ModelProviderError
 from agno.models.openai.like import OpenAILike
 
 try:

@@ -1,7 +1,7 @@
 from typing import Iterator
 
 from agno.agent import Agent
-from agno.exceptions import RetryAgentRun
+from exceptions import RetryAgentRun
 from agno.tools import FunctionCall, tool
 
 num_calls = 0

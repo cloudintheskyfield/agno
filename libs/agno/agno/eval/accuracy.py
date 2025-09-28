@@ -10,7 +10,7 @@ from agno.agent import Agent
 from agno.db.base import BaseDb
 from agno.db.schemas.evals import EvalType
 from agno.eval.utils import async_log_eval, log_eval_run, store_result_in_file
-from agno.exceptions import EvalError
+from exceptions import EvalError
 from agno.models.base import Model
 from agno.team.team import Team
 from agno.utils.log import logger, set_log_level_to_debug, set_log_level_to_info

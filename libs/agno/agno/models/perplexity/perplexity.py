@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 
 from pydantic import BaseModel
 
-from agno.exceptions import ModelProviderError
+from exceptions import ModelProviderError
 from agno.models.message import Citations, UrlCitation
 from agno.models.metrics import Metrics
 from agno.models.response import ModelResponse

@@ -3,7 +3,7 @@
 import threading
 from typing import Dict
 
-from agno.exceptions import RunCancelledException
+from exceptions import RunCancelledException
 from agno.utils.log import logger
 
 

@@ -8,7 +8,7 @@ import httpx
 from huggingface_hub import ChatCompletionInputStreamOptions
 from pydantic import BaseModel
 
-from agno.exceptions import ModelProviderError
+from exceptions import ModelProviderError
 from agno.models.base import Model
 from agno.models.message import Message
 from agno.models.metrics import Metrics

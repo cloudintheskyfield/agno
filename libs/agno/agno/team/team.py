@@ -31,7 +31,7 @@ from pydantic import BaseModel
 
 from agno.agent import Agent
 from agno.db.base import BaseDb, SessionType, UserMemory
-from agno.exceptions import ModelProviderError, RunCancelledException
+from exceptions import ModelProviderError, RunCancelledException
 from agno.knowledge.knowledge import Knowledge
 from agno.knowledge.types import KnowledgeFilter
 from agno.media import Audio, File, Image, Video
