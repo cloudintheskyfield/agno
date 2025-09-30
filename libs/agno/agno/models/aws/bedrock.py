@@ -643,6 +643,10 @@ class AwsBedrock(Model):
             tool_choice=tool_choice,
             run_response=run_response,
         ):
+            # 打印每次的 chunk content
+            if response_delta.content:
+                print(f"🔄 Bedrock Chunk content: {response_delta.content}", flush=True)
+            
             should_yield = False
 
             if response_delta.content:

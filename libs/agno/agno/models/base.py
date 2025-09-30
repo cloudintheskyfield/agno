@@ -672,19 +672,51 @@ class Model(ABC):
         Process a streaming response from the model.
         """
 
-        for response_delta in self.invoke_stream(
-            messages=messages,
-            assistant_message=assistant_message,
-            response_format=response_format,
-            tools=tools,
-            tool_choice=tool_choice or self._tool_choice,
-            run_response=run_response,
-        ):
-            yield from self._populate_stream_data_and_assistant_message(
-                stream_data=stream_data,
+        # 导入流式调试工具
+        # try:
+        #     from stream_debug_utils import log_stream_chunk
+        #     debug_available = True
+        # except ImportError:
+        #     debug_available = False
+
+
+        # chunk_index = 0
+        try:
+            for response_delta in self.invoke_stream(
+                messages=messages,
                 assistant_message=assistant_message,
-                model_response_delta=response_delta,
-            )
+                response_format=response_format,
+                tools=tools,
+                tool_choice=tool_choice or self._tool_choice,
+                run_response=run_response,
+            ):
+                # chunk_index += 1
+                #
+                # # 使用调试工具记录 chunk
+                # if debug_available:
+                #     log_stream_chunk(response_delta, model_name=getattr(self, 'name', self.__class__.__name__), chunk_index=chunk_index)
+                # else:
+                #     # 简单的打印作为后备方案
+                #     if hasattr(response_delta, 'content') and response_delta.content:
+                #         print(f"🔄 Chunk #{chunk_index}: {response_delta.content}", flush=True)
+                #     elif hasattr(response_delta, 'delta') and hasattr(response_delta.delta, 'content') and response_delta.delta.content:
+                #         print(f"🔄 Chunk #{chunk_index}: {response_delta.delta.content}", flush=True)
+
+                yield from self._populate_stream_data_and_assistant_message(
+                    stream_data=stream_data,
+                    assistant_message=assistant_message,
+                    model_response_delta=response_delta,
+                )
+        except Exception as e:
+            print(e)
+            print()
+        # 完成调试
+        # if debug_available:
+        #     try:
+        #         from stream_debug_utils import finish_stream_debug
+        #         finish_stream_debug()
+        #     except ImportError:
+        #         pass
 
         # Add final metrics to assistant message
         self._populate_assistant_message(assistant_message=assistant_message, provider_response=response_delta)

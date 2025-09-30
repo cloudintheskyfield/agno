@@ -4,15 +4,9 @@ from agno.models.anthropic import Claude
 from agno.os import AgentOS
 from agno.models.vllm import VLLM
 from agno.tools.mcp import MCPTools
-import langfuse_self_host
+from agno.vllm import model
 
 
-
-model = VLLM(
-    id='Qwen3-Omni-Thinking',
-    base_url='http://223.109.239.14:10026/v1/',
-    max_tokens=32768
-)
 
 # Create the Agent
 agno_agent = Agent(
@@ -26,6 +20,7 @@ agno_agent = Agent(
     # Add the previous session history to the context
     add_history_to_context=True,
     markdown=True,
+    stream=True
 )
 
 
