@@ -264,7 +264,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error deleting session: {e}")
-            return False
+            raise e
 
     def delete_sessions(self, session_ids: List[str]) -> None:
         """Delete multiple sessions from Redis.
@@ -288,6 +288,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error deleting sessions: {e}")
+            raise e
 
     def get_session(
         self,
@@ -334,7 +335,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Exception reading session: {e}")
-            return None
+            raise e
 
     # TODO: optimizable
     def get_sessions(
@@ -415,7 +416,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Exception reading sessions: {e}")
-            return [], 0
+            raise e
 
     def rename_session(
         self, session_id: str, session_type: SessionType, session_name: str, deserialize: Optional[bool] = True
@@ -465,7 +466,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error renaming session: {e}")
-            return None
+            raise e
 
     def upsert_session(
         self, session: Session, deserialize: Optional[bool] = True
@@ -585,15 +586,53 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error upserting session: {e}")
-            return None
+            raise e
+
+    def upsert_sessions(
+        self, sessions: List[Session], deserialize: Optional[bool] = True
+    ) -> List[Union[Session, Dict[str, Any]]]:
+        """
+        Bulk upsert multiple sessions for improved performance on large datasets.
+
+        Args:
+            sessions (List[Session]): List of sessions to upsert.
+            deserialize (Optional[bool]): Whether to deserialize the sessions. Defaults to True.
+
+        Returns:
+            List[Union[Session, Dict[str, Any]]]: List of upserted sessions.
+
+        Raises:
+            Exception: If an error occurs during bulk upsert.
+        """
+        if not sessions:
+            return []
+
+        try:
+            log_info(
+                f"RedisDb doesn't support efficient bulk operations, falling back to individual upserts for {len(sessions)} sessions"
+            )
+
+            # Fall back to individual upserts
+            results = []
+            for session in sessions:
+                if session is not None:
+                    result = self.upsert_session(session, deserialize=deserialize)
+                    if result is not None:
+                        results.append(result)
+            return results
+
+        except Exception as e:
+            log_error(f"Exception during bulk session upsert: {e}")
+            return []
 
     # -- Memory methods --
 
-    def delete_user_memory(self, memory_id: str):
+    def delete_user_memory(self, memory_id: str, user_id: Optional[str] = None):
         """Delete a user memory from Redis.
 
         Args:
             memory_id (str): The ID of the memory to delete.
+            user_id (Optional[str]): The ID of the user. If provided, verifies the memory belongs to this user before deleting.
 
         Returns:
             bool: True if the memory was deleted, False otherwise.
@@ -602,6 +641,16 @@ class RedisDb(BaseDb):
             Exception: If any error occurs while deleting the memory.
         """
         try:
+            # If user_id is provided, verify ownership before deleting
+            if user_id is not None:
+                memory = self._get_record("memories", memory_id)
+                if memory is None:
+                    log_debug(f"No user memory found with id: {memory_id}")
+                    return
+                if memory.get("user_id") != user_id:
+                    log_debug(f"Memory {memory_id} does not belong to user {user_id}")
+                    return
+
             if self._delete_record(
                 "memories", memory_id, index_fields=["user_id", "agent_id", "team_id", "workflow_id"]
             ):
@@ -611,16 +660,27 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error deleting user memory: {e}")
+            raise e
 
-    def delete_user_memories(self, memory_ids: List[str]) -> None:
+    def delete_user_memories(self, memory_ids: List[str], user_id: Optional[str] = None) -> None:
         """Delete user memories from Redis.
 
         Args:
             memory_ids (List[str]): The IDs of the memories to delete.
+            user_id (Optional[str]): The ID of the user. If provided, only deletes memories belonging to this user.
         """
         try:
             # TODO: cant we optimize this?
             for memory_id in memory_ids:
+                # If user_id is provided, verify ownership before deleting
+                if user_id is not None:
+                    memory = self._get_record("memories", memory_id)
+                    if memory is None:
+                        continue
+                    if memory.get("user_id") != user_id:
+                        log_debug(f"Memory {memory_id} does not belong to user {user_id}, skipping deletion")
+                        continue
+
                 self._delete_record(
                     "memories",
                     memory_id,
@@ -629,6 +689,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error deleting user memories: {e}")
+            raise e
 
     def get_all_memory_topics(self) -> List[str]:
         """Get all memory topics from Redis.
@@ -649,15 +710,17 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Exception reading memory topics: {e}")
-            return []
+            raise e
 
     def get_user_memory(
-        self, memory_id: str, deserialize: Optional[bool] = True
+        self, memory_id: str, deserialize: Optional[bool] = True, user_id: Optional[str] = None
     ) -> Optional[Union[UserMemory, Dict[str, Any]]]:
         """Get a memory from Redis.
 
         Args:
             memory_id (str): The ID of the memory to get.
+            deserialize (Optional[bool]): Whether to deserialize the memory. Defaults to True.
+            user_id (Optional[str]): The ID of the user. If provided, only returns the memory if it belongs to this user.
 
         Returns:
             Optional[UserMemory]: The memory data if found, None otherwise.
@@ -667,6 +730,10 @@ class RedisDb(BaseDb):
             if memory_raw is None:
                 return None
 
+            # Filter by user_id if provided
+            if user_id is not None and memory_raw.get("user_id") != user_id:
+                return None
+
             if not deserialize:
                 return memory_raw
 
@@ -674,7 +741,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Exception reading memory: {e}")
-            return None
+            raise e
 
     def get_user_memories(
         self,
@@ -747,7 +814,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Exception reading memories: {e}")
-            return [] if deserialize else ([], 0)
+            raise e
 
     def get_user_memory_stats(
         self,
@@ -772,21 +839,21 @@ class RedisDb(BaseDb):
             # Group by user_id
             user_stats = {}
             for memory in all_memories:
-                user_id = memory.get("user_id")
-                if user_id is None:
+                memory_user_id = memory.get("user_id")
+                if memory_user_id is None:
                     continue
 
-                if user_id not in user_stats:
-                    user_stats[user_id] = {
-                        "user_id": user_id,
+                if memory_user_id not in user_stats:
+                    user_stats[memory_user_id] = {
+                        "user_id": memory_user_id,
                         "total_memories": 0,
                         "last_memory_updated_at": 0,
                     }
 
-                user_stats[user_id]["total_memories"] += 1
+                user_stats[memory_user_id]["total_memories"] += 1
                 updated_at = memory.get("updated_at", 0)
-                if updated_at > user_stats[user_id]["last_memory_updated_at"]:
-                    user_stats[user_id]["last_memory_updated_at"] = updated_at
+                if updated_at > user_stats[memory_user_id]["last_memory_updated_at"]:
+                    user_stats[memory_user_id]["last_memory_updated_at"] = updated_at
 
             stats_list = list(user_stats.values())
 
@@ -801,7 +868,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Exception getting user memory stats: {e}")
-            return [], 0
+            raise e
 
     def upsert_user_memory(
         self, memory: UserMemory, deserialize: Optional[bool] = True
@@ -842,7 +909,44 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error upserting user memory: {e}")
-            return None
+            raise e
+
+    def upsert_memories(
+        self, memories: List[UserMemory], deserialize: Optional[bool] = True
+    ) -> List[Union[UserMemory, Dict[str, Any]]]:
+        """
+        Bulk upsert multiple user memories for improved performance on large datasets.
+
+        Args:
+            memories (List[UserMemory]): List of memories to upsert.
+            deserialize (Optional[bool]): Whether to deserialize the memories. Defaults to True.
+
+        Returns:
+            List[Union[UserMemory, Dict[str, Any]]]: List of upserted memories.
+
+        Raises:
+            Exception: If an error occurs during bulk upsert.
+        """
+        if not memories:
+            return []
+
+        try:
+            log_info(
+                f"RedisDb doesn't support efficient bulk operations, falling back to individual upserts for {len(memories)} memories"
+            )
+
+            # Fall back to individual upserts
+            results = []
+            for memory in memories:
+                if memory is not None:
+                    result = self.upsert_user_memory(memory, deserialize=deserialize)
+                    if result is not None:
+                        results.append(result)
+            return results
+
+        except Exception as e:
+            log_error(f"Exception during bulk memory upsert: {e}")
+            return []
 
     def clear_memories(self) -> None:
         """Delete all memories from the database.
@@ -859,9 +963,8 @@ class RedisDb(BaseDb):
                 self.redis_client.delete(*keys)
 
         except Exception as e:
-            from agno.utils.log import log_warning
-
-            log_warning(f"Exception deleting all memories: {e}")
+            log_error(f"Exception deleting all memories: {e}")
+            raise e
 
     # -- Metrics methods --
 
@@ -899,7 +1002,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error reading sessions for metrics: {e}")
-            return []
+            raise e
 
     def _get_metrics_calculation_starting_date(self) -> Optional[date]:
         """Get the first date for which metrics calculation is needed.
@@ -936,7 +1039,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error getting metrics starting date: {e}")
-            return None
+            raise e
 
     def calculate_metrics(self) -> Optional[list[dict]]:
         """Calculate metrics for all dates without complete metrics.
@@ -1043,7 +1146,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error getting metrics: {e}")
-            return [], None
+            raise e
 
     # -- Knowledge methods --
 
@@ -1061,6 +1164,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error deleting knowledge content: {e}")
+            raise e
 
     def get_knowledge_content(self, id: str) -> Optional[KnowledgeRow]:
         """Get a knowledge row from the database.
@@ -1083,7 +1187,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error getting knowledge content: {e}")
-            return None
+            raise e
 
     def get_knowledge_contents(
         self,
@@ -1126,7 +1230,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error getting knowledge contents: {e}")
-            return [], 0
+            raise e
 
     def upsert_knowledge_content(self, knowledge_row: KnowledgeRow):
         """Upsert knowledge content in the database.
@@ -1148,7 +1252,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error upserting knowledge content: {e}")
-            return None
+            raise e
 
     # -- Eval methods --
 
@@ -1181,7 +1285,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Error creating eval run: {e}")
-            return None
+            raise e
 
     def delete_eval_run(self, eval_run_id: str) -> None:
         """Delete an eval run from Redis.
@@ -1256,7 +1360,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Exception getting eval run {eval_run_id}: {e}")
-            return None
+            raise e
 
     def get_eval_runs(
         self,
@@ -1332,7 +1436,7 @@ class RedisDb(BaseDb):
 
         except Exception as e:
             log_error(f"Exception getting eval runs: {e}")
-            return []
+            raise e
 
     def rename_eval_run(
         self, eval_run_id: str, name: str, deserialize: Optional[bool] = True

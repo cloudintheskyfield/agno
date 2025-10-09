@@ -42,9 +42,9 @@ team = Team(name="News and Weather Team", members=[agent_1, agent_2], model=q72b
 # Asynchronous execution
 # result = await team.arun("What is the weather in Tokyo?")
 
-# streaming
-for chunk in team.run("今天东京天气怎么样?", stream=True, stream_intermediate_steps=True):
-    print(chunk.content, end="", flush=True)
+# streaming fail
+# for chunk in team.run("今天东京天气怎么样?", stream=True, stream_intermediate_steps=True):
+#     print(chunk.content, end="", flush=True)
 
 # async def f():
 #     async for chunk in team.arun("今天东京天气怎么样?", stream=True, stream_intermediate_steps=True):
@@ -52,3 +52,22 @@ for chunk in team.run("今天东京天气怎么样?", stream=True, stream_interm
 #
 # import asyncio
 # asyncio.run(f())
+
+
+# Stream with intermediate steps
+response_stream = team.run(
+    "今天东京天气怎么样?",
+    stream=True,
+    stream_intermediate_steps=True
+)
+for event in response_stream:
+    if event.event == "TeamRunContent":
+        print(f"Content: {event.content}")
+    elif event.event == "TeamToolCallStarted":
+        print(f"Tool call started: {event.tool}")
+    elif event.event == "ToolCallStarted":
+        print(f"Member tool call started: {event.tool}")
+    elif event.event == "ToolCallCompleted":
+        print(f"Member tool call completed: {event.tool}")
+    elif event.event == "TeamReasoningStep":
+        print(f"Reasoning step: {event.content}")

@@ -6,7 +6,7 @@ import httpx
 from pydantic import BaseModel
 from typing_extensions import Literal
 
-from exceptions import ModelProviderError
+from agno.exceptions import ModelProviderError
 from agno.media import File
 from agno.models.base import MessageData, Model
 from agno.models.message import Citations, Message, UrlCitation
@@ -45,7 +45,7 @@ class OpenAIResponses(Model):
     parallel_tool_calls: Optional[bool] = None
     reasoning: Optional[Dict[str, Any]] = None
     verbosity: Optional[Literal["low", "medium", "high"]] = None
-    reasoning_effort: Optional[Literal["minimal", "medium", "high"]] = None
+    reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = None
     reasoning_summary: Optional[Literal["auto", "concise", "detailed"]] = None
     store: Optional[bool] = None
     temperature: Optional[float] = None
@@ -423,7 +423,7 @@ class OpenAIResponses(Model):
                     msg_index = messages.index(msg)
 
                     # Include messages after this assistant message
-                    messages_to_format = messages[msg_index + 1:]
+                    messages_to_format = messages[msg_index + 1 :]
 
                     break
 
