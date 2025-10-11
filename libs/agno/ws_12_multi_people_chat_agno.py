@@ -2,6 +2,7 @@ import disable_metrics
 
 import json
 import re
+from time import perf_counter
 from pathlib import Path
 from typing import Dict, List
 
@@ -40,12 +41,14 @@ def build_agent(cfg: Dict[str, str]) -> Agent:
         model=q3_32b,  # 使用本地部署的 q72b 大模型
         markdown=True,  # 允许输出 Markdown 格式
         db=DB,  # 绑定共享的 Sqlite 存储，实现跨会话记忆
-        enable_agentic_memory=True,  # 启用 Agent 自主撰写/读取记忆
-        enable_user_memories=True,  # 记录用户相关记忆（用于长期对话）
-        add_memories_to_context=True,  # 将历史记忆注入上下文
-        add_history_to_context=True,  # 自动带入历史消息
-        enable_session_summaries=True,  # 允许生成会话摘要
-        add_session_summary_to_context=True,  # 将摘要注入上下文，支持长期回顾
+        enable_agentic_memory=False,  # 启用 Agent 自主撰写/读取记忆
+        enable_user_memories=False,  # 记录用户相关记忆（用于长期对话）  db
+        add_memories_to_context=False,  # 将历史记忆注入上下文
+        stream=False,
+        add_history_to_context=False,  # 自动带入历史消息
+
+        enable_session_summaries=False,  # 允许生成会话摘要
+        add_session_summary_to_context=False,  # 将摘要注入上下文，支持长期回顾 实时动态记忆更新
     )
 
 
@@ -101,18 +104,20 @@ def chat(topic: str, rounds: int = 1, duration_seconds: int = 10) -> None:
                 f"\n{peer_guidance}"
                 f"\n{length_guidance}\n请保持角色设定，言之有物而不过度赘述。"
             )
+            start = perf_counter()
             reply = agent.run(
                 prompt,
                 user_id=USER_ID,
                 session_id=session_id,
-                stream=False,
+                stream=True,
             )
+            elapsed = perf_counter() - start
             content = getattr(reply, "content", str(reply)).strip()
-            print(f"{agent.name}:\n{content}\n")
+            print(f"{agent.name} (耗时 {elapsed:.2f}s):\n{content}\n")
             history.append(f"{agent.name}: {content}")
 
 
 if __name__ == "__main__":
-    chat("应不应该上班", rounds=1, duration_seconds=4)
+    chat("应不应该上班", rounds=1, duration_seconds=6)
 
 
