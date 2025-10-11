@@ -2,6 +2,7 @@ import disable_metrics
 
 import json
 import re
+from collections.abc import Iterable
 from time import perf_counter
 from pathlib import Path
 from typing import Dict, List
@@ -41,13 +42,13 @@ def build_agent(cfg: Dict[str, str]) -> Agent:
         model=q3_32b,  # 使用本地部署的 q72b 大模型
         markdown=True,  # 允许输出 Markdown 格式
         db=DB,  # 绑定共享的 Sqlite 存储，实现跨会话记忆
-        enable_agentic_memory=False,  # 启用 Agent 自主撰写/读取记忆
-        enable_user_memories=False,  # 记录用户相关记忆（用于长期对话）  db
+        enable_agentic_memory=True,  # 启用 Agent 自主撰写/读取记忆
+        enable_user_memories=True,  # 记录用户相关记忆（用于长期对话）  db
         add_memories_to_context=False,  # 将历史记忆注入上下文
         stream=False,
         add_history_to_context=False,  # 自动带入历史消息
 
-        enable_session_summaries=False,  # 允许生成会话摘要
+        enable_session_summaries=True,  # 允许生成会话摘要
         add_session_summary_to_context=False,  # 将摘要注入上下文，支持长期回顾 实时动态记忆更新
     )
 
@@ -72,6 +73,22 @@ def _calc_length_guidance(duration_seconds: int, speaker_count: int) -> str:
         f"整体目标长度约为{total_min}-{total_max}字，每位成员控制在{per_min}-{per_max}字之间，"
         "请自然断句并保留对话的节奏感。"
     )
+
+
+def _is_stream_response(response: object) -> bool:
+    return isinstance(response, Iterable) and not isinstance(response, (str, bytes, dict))
+
+
+def _chunk_to_text(chunk: object) -> str:
+    if hasattr(chunk, "content") and getattr(chunk, "content"):
+        return str(getattr(chunk, "content"))
+    if hasattr(chunk, "delta") and getattr(chunk, "delta"):
+        return str(getattr(chunk, "delta"))
+    if isinstance(chunk, dict):
+        for key in ("content", "delta", "text"):
+            if chunk.get(key):
+                return str(chunk[key])
+    return str(chunk)
 
 
 def chat(topic: str, rounds: int = 1, duration_seconds: int = 10) -> None:
@@ -111,9 +128,21 @@ def chat(topic: str, rounds: int = 1, duration_seconds: int = 10) -> None:
                 session_id=session_id,
                 stream=True,
             )
+            if _is_stream_response(reply):
+                print(f"{agent.name} (流式输出):", flush=True)
+                segments: List[str] = []
+                for chunk in reply:  # type: ignore[assignment]
+                    text = _chunk_to_text(chunk)
+                    if text:
+                        print(text, end="", flush=True)
+                        segments.append(text)
+                print()  # 换行
+                content = "".join(segments).strip()
+            else:
+                content = getattr(reply, "content", str(reply)).strip()
+                print(content)
             elapsed = perf_counter() - start
-            content = getattr(reply, "content", str(reply)).strip()
-            print(f"{agent.name} (耗时 {elapsed:.2f}s):\n{content}\n")
+            print(f"{agent.name} (耗时 {elapsed:.2f}s)\n")
             history.append(f"{agent.name}: {content}")
 
 
