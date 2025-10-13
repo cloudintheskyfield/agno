@@ -23,7 +23,7 @@ q72b = VLLM(
 q3_32b = VLLM(
     id='Qwen3-32B',
     base_url='http://223.109.239.14:10015/v1/',
-    max_tokens=256,
+    max_tokens=10000,
     temperature=1,
 )
 
