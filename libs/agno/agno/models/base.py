@@ -681,6 +681,8 @@ class Model(ABC):
 
 
         # chunk_index = 0
+        response_delta = None
+
         try:
             for response_delta in self.invoke_stream(
                 messages=messages,
@@ -719,7 +721,8 @@ class Model(ABC):
         #         pass
 
         # Add final metrics to assistant message
-        self._populate_assistant_message(assistant_message=assistant_message, provider_response=response_delta)
+        if response_delta is not None:
+            self._populate_assistant_message(assistant_message=assistant_message, provider_response=response_delta)
 
     def response_stream(
         self,

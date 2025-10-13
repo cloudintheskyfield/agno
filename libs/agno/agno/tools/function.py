@@ -737,6 +737,8 @@ class FunctionCall(BaseModel):
         def execute_entrypoint(name, func, args):
             """Execute the entrypoint function."""
             arguments = entrypoint_args.copy()
+            if args:
+                arguments.update(args)
             if self.arguments is not None:
                 arguments.update(self.arguments)
             return self.function.entrypoint(**arguments)  # type: ignore

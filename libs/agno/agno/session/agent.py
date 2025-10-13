@@ -200,7 +200,7 @@ class AgentSession:
             assistant_role = ["assistant", "model", "CHATBOT"]
 
         final_messages: List[Message] = []
-        session_runs = self.runs
+        session_runs = self.runs[-10:]
         if not session_runs:
             return []
 

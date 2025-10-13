@@ -1045,7 +1045,7 @@ class SqliteDb(BaseDb):
             Exception: If an error occurs during retrieval.
         """
         try:
-            table = self._get_table(table_type="memories")
+            table = self._get_table(table_type="memories", create_table_if_not_found=True)
             if table is None:
                 return [] if deserialize else ([], 0)
 

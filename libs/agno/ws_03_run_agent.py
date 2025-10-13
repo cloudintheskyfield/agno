@@ -1,5 +1,5 @@
 from agno.agent import Agent, RunOutput
-from agno.vllm import model
+from agno.vllm import q72b
 from agno.utils.pprint import pprint_run_response
 from typing import Iterator
 from agno.agent import Agent, RunOutputEvent
@@ -7,7 +7,7 @@ from agno.models.openai import OpenAIChat
 from agno.utils.pprint import pprint_run_response
 
 
-agent = Agent(model=model, description='你是一个故事家')
+agent = Agent(model=q72b, description='你是一个故事家')
 
 # Run agent and return the response as a variable
 response: RunOutput = agent.run("讲个鬼故事， 给出完整故事，别加省略号")
@@ -16,17 +16,17 @@ response: RunOutput = agent.run("讲个鬼故事， 给出完整故事，别加�
 pprint_run_response(response, markdown=True)
 
 
-# agent2 = Agent(
-#     model=model,
-#     description="You write movie scripts.",
-# )
+agent2 = Agent(
+    model=q72b,
+    description="You write movie scripts, answer in Chinese.",
+)
 #
 # response = agent2.run("写一个关于生活在纽约的女孩的电影剧本")
 # pprint_run_response(response, markdown=True)
 #
-# # Stream with intermediate steps
-# response_stream: Iterator[RunOutputEvent] = agent2.run(
-#     "Tell me a 5 second short story about a lion",
-#     stream=True,
-#     stream_intermediate_steps=True
-# )
+# Stream with intermediate steps
+response_stream: Iterator[RunOutputEvent] = agent2.run(
+    "Tell me a 5 second short story about a lion",
+    stream=True,
+    stream_intermediate_steps=True
+)

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+import json
+from typing import Any, Dict, Iterable, Iterator, List, Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from ws_12_multi_people_chat_agno_api import run_multi_people_chat
+from ws_12_multi_people_chat_agno_api import run_multi_people_chat, stream_multi_people_chat
 
 app = FastAPI(
     title="Multi People Chat Server",
@@ -38,9 +40,13 @@ class ChatRequest(BaseModel):
         le=120,
         description="预估生成时长，影响提示中的目标字数",
     )
-    reuse_session: bool = Field(
+    session_id: Optional[str] = Field(
+        default=None,
+        description="可选的会话 ID；留空则自动生成新会话",
+    )
+    stream: bool = Field(
         False,
-        description="是否复用 session 以便跨请求共享记忆",
+        description="是否返回流式输出（Server-Sent Text Stream）",
     )
 
 
@@ -48,15 +54,27 @@ class ChatResponse(BaseModel):
     topic: str
     rounds: int
     duration_seconds: int
+    session_id: str
     transcript: List[Dict[str, Any]]
 
 
-class SimpleChatRequest(BaseModel):
-    topic: str = Field(..., description="讨论主题")
-    characters: Optional[List[CharacterConfig]] = Field(
-        default=None,
-        description="角色配置列表，仅包含必要字段",
-    )
+def _generate_stream(
+    *,
+    topic: str,
+    characters: Optional[List[Dict[str, Any]]],
+    rounds: int,
+    duration_seconds: int,
+    session_id: Optional[str],
+) -> Iterator[str]:
+    for event in stream_multi_people_chat(
+        topic,
+        characters=characters,
+        rounds=rounds,
+        duration_seconds=duration_seconds,
+        session_id=session_id,
+    ):
+        payload = json.dumps(event, ensure_ascii=False)
+        yield f"data: {payload}\n\n"
 
 
 @app.get("/health", tags=["system"])
@@ -66,13 +84,33 @@ def health_check() -> Dict[str, str]:
 
 @app.post("/chat", response_model=ChatResponse, tags=["chat"])
 def chat_endpoint(payload: ChatRequest) -> ChatResponse:
+    characters_data = (
+        [character.dict() for character in payload.characters] if payload.characters else None
+    )
+
+    if payload.stream:
+        try:
+            generator = _generate_stream(
+                topic=payload.topic,
+                characters=characters_data,
+                rounds=payload.rounds,
+                duration_seconds=payload.duration_seconds,
+                session_id=payload.session_id,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception as exc:  # pragma: no cover
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+        return StreamingResponse(generator, media_type="text/event-stream")
+
     try:
-        transcript = run_multi_people_chat(
+        transcript, session_id = run_multi_people_chat(
             payload.topic,
-            characters=[character.dict() for character in payload.characters] if payload.characters else None,
+            characters=characters_data,
             rounds=payload.rounds,
             duration_seconds=payload.duration_seconds,
-            reuse_session=payload.reuse_session,
+            session_id=payload.session_id,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -83,17 +121,9 @@ def chat_endpoint(payload: ChatRequest) -> ChatResponse:
         topic=payload.topic,
         rounds=payload.rounds,
         duration_seconds=payload.duration_seconds,
+        session_id=session_id,
         transcript=transcript,
     )
-
-
-@app.post("/chat/topic", response_model=ChatResponse, tags=["chat"])
-def simple_chat_endpoint(payload: SimpleChatRequest) -> ChatResponse:
-    enriched_request = ChatRequest(
-        topic=payload.topic,
-        characters=payload.characters,
-    )
-    return chat_endpoint(enriched_request)
 
 
 __all__ = ["app"]

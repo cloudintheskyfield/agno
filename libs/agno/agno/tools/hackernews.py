@@ -35,7 +35,7 @@ class HackerNewsTools(Toolkit):
             num_stories (int): Number of stories to return. Defaults to 10.
 
         Returns:
-            str: JSON string of top stories.
+            str: JSON string of top stories. 10015
         """
 
         log_debug(f"Getting top {num_stories} stories from Hacker News")

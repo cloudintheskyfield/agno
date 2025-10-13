@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections import ChainMap, deque
 from dataclasses import dataclass
 from os import getenv
@@ -4118,12 +4119,14 @@ class Agent:
                     )
 
                 # Wait for all operations to complete and handle any errors
+                t1 = time.time()
                 for future in as_completed(futures):
                     try:
                         future.result()
                     except Exception as e:
                         log_warning(f"Error in memory/summary operation: {str(e)}")
 
+                print(f'{self.name} cost: {time.time() - t1}s')
                 if self.stream_intermediate_steps:
                     yield self._handle_event(
                         create_memory_update_completed_event(from_run_response=run_response), run_response
