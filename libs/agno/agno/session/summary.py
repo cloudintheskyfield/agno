@@ -88,13 +88,15 @@ class SessionSummaryManager:
         self,
         conversation: List[Message],
         response_format: Union[Dict[str, Any], Type[BaseModel]],
+        summary_last_time: Union[SessionSummary] = None
     ) -> Message:
         if self.session_summary_prompt is not None:
             system_prompt = self.session_summary_prompt
         else:
-            system_prompt = dedent("""\
+            system_prompt = dedent(f"""\
+            {'Here is summary last time：' + summary_last_time.summary + '\n' if summary_last_time else ''}
             Analyze the following conversation between a user and an assistant, and extract the following details:
-            - Summary (str): Provide a concise summary of the session, focusing on important information that would be helpful for future interactions.
+            - Summary (str): Provide a concise summary of the session based on summary last time and following conversation, focusing on important information that would be helpful for future interactions.
             - Topics (Optional[List[str]]): List the topics discussed in the session.
             Keep the summary concise and to the point. Only include relevant information.
             """)
@@ -128,6 +130,7 @@ class SessionSummaryManager:
                 self.get_system_message(
                     conversation=session.get_messages_for_session(),  # type: ignore
                     response_format=response_format,
+                    summary_last_time=session.summary if session else None
                 ),
                 Message(role="user", content="Provide the summary of the conversation."),
             ]

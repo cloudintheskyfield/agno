@@ -164,15 +164,26 @@ def _is_stream_response(response: object) -> bool:
 
 
 def _chunk_to_text(chunk: object) -> str:
-    if hasattr(chunk, "content") and getattr(chunk, "content"):
-        return str(getattr(chunk, "content"))
-    if hasattr(chunk, "delta") and getattr(chunk, "delta"):
-        return str(getattr(chunk, "delta"))
+    if isinstance(chunk, str):
+        return chunk
+    if isinstance(chunk, bytes):
+        return chunk.decode("utf-8", errors="ignore")
+
+    content = getattr(chunk, "content", None)
+    if content:
+        return str(content)
+
+    delta = getattr(chunk, "delta", None)
+    if delta:
+        return str(delta)
+
     if isinstance(chunk, dict):
-        for key in ("content", "delta", "text"):
-            if chunk.get(key):
-                return str(chunk[key])
-    return str(chunk)
+        for key in ("delta", "content", "text"):
+            value = chunk.get(key)
+            if value:
+                return str(value)
+
+    return ""
 
 
 def chat(topic: str, rounds: int = 1, duration_seconds: int = 10) -> None:
