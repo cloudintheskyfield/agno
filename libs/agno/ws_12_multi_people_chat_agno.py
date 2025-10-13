@@ -41,14 +41,14 @@ def build_agent(cfg: Dict[str, str]) -> Agent:
         role=f"你是{name}，{persona}。",  # 系统提示，约束角色设定
         model=q3_32b,  # 使用本地部署的 q72b 大模型
         markdown=True,  # 允许输出 Markdown 格式
-        db=DB,  # 绑定共享的 Sqlite 存储，实现跨会话记忆
-        enable_agentic_memory=True,  # 启用 Agent 自主撰写/读取记忆
-        enable_user_memories=True,  # 记录用户相关记忆（用于长期对话）  db
+        # db=DB,  # 绑定共享的 Sqlite 存储，实现跨会话记忆
+        enable_agentic_memory=False,  # 启用 Agent 自主撰写/读取记忆
+        enable_user_memories=False,  # 记录用户相关记忆（用于长期对话）  db
         add_memories_to_context=False,  # 将历史记忆注入上下文
         stream=False,
         add_history_to_context=False,  # 自动带入历史消息
 
-        enable_session_summaries=True,  # 允许生成会话摘要
+        enable_session_summaries=False,  # 允许生成会话摘要
         add_session_summary_to_context=False,  # 将摘要注入上下文，支持长期回顾 实时动态记忆更新
     )
 
